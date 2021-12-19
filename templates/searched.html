@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Product Details
+{% endblock %}
+
+{% block main %}
+    {% for detail in details %}
+        your product:{{detail["name"]}}
+        <br>
+        Description:{{detail["description"]}}
+        <br>
+        Price:{{detail["price"]}}
+   {% endfor %}
+{% endblock %}

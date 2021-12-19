@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    List
+{% endblock %}
+
+{% block main %}
+    <table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Price</th>
+      <th scope="col">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      {% for products in product %}
+            <tr>
+              <td>{{products['name']}}</td>
+              <td>{{products["price"]}}</td>
+              <td>{{products["description"]}}</td>
+            </tr>
+      {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

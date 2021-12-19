@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    History
+{% endblock %}
+
+{% block main %}
+    <table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Number</th>
+      <th scope="col">Price</th>
+      <th scope="col">Transacted</th>
+    </tr>
+  </thead>
+  <tbody>
+      {% for price in prices %}
+            <tr>
+              <td>{{price['name']}}</td>
+              <td>{{price["number"]}}</td>
+              <td>{{price["price"]}}</td>
+              <td>{{price["timestamp"]}}</td>
+            </tr>
+      {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
