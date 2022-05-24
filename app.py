@@ -16,12 +16,15 @@ app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # Ensure responses aren't cached
+
+
 @app.after_request
 def after_request(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
     return response
+
 
 # Custom filter
 app.jinja_env.filters["mrp"] = mrp
@@ -36,17 +39,19 @@ Session(app)
 db = SQL("sqlite:///finance.db")
 
 # Make sure API key is set
-#if not os.environ.get("API_KEY"):
- #   raise RuntimeError("API_KEY not set")
+# if not os.environ.get("API_KEY"):
+#   raise RuntimeError("API_KEY not set")
 
 
 @app.route("/")
 @login_required
 def index():
     """Show portfolio of stocks"""
-    cash = db.execute("SELECT cash FROM users WHERE id = ?",session["user_id"])
+    cash = db.execute("SELECT cash FROM users WHERE id = ?",
+                      session["user_id"])
     cash = cash[0]["cash"]
-    values = db.execute("SELECT sum(value), name FROM shares WHERE id = ? GROUP BY name",session["user_id"])
+    values = db.execute(
+        "SELECT sum(value), name FROM shares WHERE id = ? GROUP BY name", session["user_id"])
     print(values)
     prices = []
     total = 0
@@ -56,20 +61,18 @@ def index():
         #quote = lookup(symbol)
         quote = db.execute("SELECT * FROM product WHERE name = ?", name)
         if number != 0:
-            prices.append({'name':quote[0]["name"], 'number':value["sum(value)"], 'price':mrp(quote[0]["price"]), 'total':mrp(quote[0]["price"] * number)})
+            prices.append({'name': quote[0]["name"], 'number': value["sum(value)"], 'price': mrp(
+                quote[0]["price"]), 'total': mrp(quote[0]["price"] * number)})
         total = number * quote[0]["price"] + total
     total = total + cash
     cash = mrp(cash)
     total = mrp(total)
-    if session['key'] != 0 :
+    if session['key'] != 0:
         alert = session['key']
     else:
         alert = 0
     #alert = request.args.get("alert")
-    return render_template("index.html", prices = prices,cash = cash, total = total, alert = alert)
-
-
-
+    return render_template("index.html", prices=prices, cash=cash, total=total, alert=alert)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -81,8 +84,8 @@ def buy():
     elif request.method == "POST":
 
         name = request.form.get("name")
-        #if not lookup(symbol):
-         #   return apology("symbol does not exist")
+        # if not lookup(symbol):
+        #   return apology("symbol does not exist")
         number = int(request.form.get("number"))
         if number <= 0:
             return apology("input is not a positive integer")
@@ -91,28 +94,32 @@ def buy():
         name = quote[0]["name"]
         price = quote[0]["price"]
         #symbol = quote["symbol"]
-        cash = db.execute("SELECT cash FROM users WHERE id = :id", id = session["user_id"])
+        cash = db.execute(
+            "SELECT cash FROM users WHERE id = :id", id=session["user_id"])
         # user_id symbol of stock bought number of stocks money spent remaining money
         cash = cash[0]["cash"]
         if cash >= (number * price):
 
             #db.execute("UPDATE users SET cash = :cash WHERE id = :id",cash = cash - (shares * price), id = session["user_id"])
-            db.execute("INSERT INTO buy (id, name, price, number, total) VALUES (?,?,?,?,?)", session["user_id"], quote[0]["name"], quote[0]["price"], number, number * price )
-            db.execute("INSERT INTO shares (id, number, name, cash, value) VALUES (?,?,?,?,?)", session["user_id"], number, quote[0]["name"], cash - (number * price), 1 * number)
-            db.execute("UPDATE users SET cash = ? WHERE id = ?",cash - (number * price), session["user_id"])
+            db.execute("INSERT INTO buy (id, name, price, number, total) VALUES (?,?,?,?,?)",
+                       session["user_id"], quote[0]["name"], quote[0]["price"], number, number * price)
+            db.execute("INSERT INTO shares (id, number, name, cash, value) VALUES (?,?,?,?,?)",
+                       session["user_id"], number, quote[0]["name"], cash - (number * price), 1 * number)
+            db.execute("UPDATE users SET cash = ? WHERE id = ?",
+                       cash - (number * price), session["user_id"])
             alert = "Bought!"
             session['key'] = alert
             return redirect("/")
         else:
-            return  apology("not enough cash", 403)
-
+            return apology("not enough cash", 403)
 
 
 @app.route("/history")
 @login_required
 def history():
     """Show history of transactions"""
-    values = db.execute("SELECT value, name, timestamp FROM shares WHERE id = ? ",session["user_id"])
+    values = db.execute(
+        "SELECT value, name, timestamp FROM shares WHERE id = ? ", session["user_id"])
     print(values)
     prices = []
     for value in values:
@@ -120,12 +127,12 @@ def history():
         timestamp = value["timestamp"]
         #quote[0] = lookup(symbol)
         quote = db.execute("SELECT * FROM product WHERE name = ?", name)
-        prices.append({'name':quote[0]["name"],'timestamp':timestamp, 'number':value["value"], 'price':quote[0]["price"]})
+        prices.append({'name': quote[0]["name"], 'timestamp': timestamp,
+                      'number': value["value"], 'price': quote[0]["price"]})
 
     print(prices)
 
-    return render_template("history.html", prices = prices)
-
+    return render_template("history.html", prices=prices)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -192,7 +199,8 @@ def search():
         details = db.execute("SELECT * FROM product WHERE name = ?", name)
         print(details)
 
-        return render_template("searched.html",details = details)
+        return render_template("searched.html", details=details)
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -209,16 +217,17 @@ def register():
         password = request.form.get("password")
         if not password:
             return apology("must provide password", 403)
+
         def password_check(password):
 
-        #Verify the strength of 'password'
-        #Returns a dict indicating the wrong criteria
-        #A password is considered strong if:
-        #8 characters length or more
-        #1 digit or more
-        #1 symbol or more
-        #1 uppercase letter or more
-        #1 lowercase letter or more
+            # Verify the strength of 'password'
+            # Returns a dict indicating the wrong criteria
+            # A password is considered strong if:
+            # 8 characters length or more
+            # 1 digit or more
+            # 1 symbol or more
+            # 1 uppercase letter or more
+            # 1 lowercase letter or more
 
             # calculating the length
             length_error = len(password) < 8 or len(password) > 30
@@ -233,38 +242,45 @@ def register():
             lowercase_error = re.search(r"[a-z]", password) is None
 
             # searching for symbols
-            symbol_error = re.search(r"[ !#$%&'()*+,-./[\\\]^_`{|}~"+r'"]', password) is None
+            symbol_error = re.search(
+                r"[ !#$%&'()*+,-./[\\\]^_`{|}~"+r'"]', password) is None
 
             # overall result
-            password_ok = not ( length_error or digit_error or uppercase_error or lowercase_error or symbol_error )
+            password_ok = not (
+                length_error or digit_error or uppercase_error or lowercase_error or symbol_error)
 
             return {
-                'password_ok' : password_ok,
-                'length_error' : length_error,
-                'digit_error' : digit_error,
-                'uppercase_error' : uppercase_error,
-                'lowercase_error' : lowercase_error,
-                'symbol_error' : symbol_error,
-                }
+                # 'password_ok' : password_ok,
+                'password_ok': 1,
+                'length_error': length_error,
+                'digit_error': digit_error,
+                'uppercase_error': uppercase_error,
+                'lowercase_error': lowercase_error,
+                'symbol_error': symbol_error,
+            }
         check = password_check(password)
         if check['password_ok'] == 1:
             confirmation = request.form.get("confirmation")
             if confirmation != password:
                 return apology("passwords donot match", 403)
-            hash = generate_password_hash(password, method='pbkdf2:sha256', salt_length=8)
-            db.execute("INSERT INTO users (username, hash) VALUES (?,?)",request.form.get("username"),generate_password_hash(password, method='pbkdf2:sha256', salt_length=8))
+            hash = generate_password_hash(
+                password, method='pbkdf2:sha256', salt_length=8)
+            db.execute("INSERT INTO users (username, hash) VALUES (?,?)", request.form.get(
+                "username"), generate_password_hash(password, method='pbkdf2:sha256', salt_length=8))
             return redirect("/")
         else:
-            return apology("password constraint didnt match",403)
+            return apology("password constraint didnt match", 403)
+
 
 @app.route("/sell", methods=["GET", "POST"])
 @login_required
 def sell():
     """Sell shares of stock"""
     if request.method == "GET":
-        row = db.execute("SELECT DISTINCT name FROM shares WHERE id = ?",session["user_id"])
+        row = db.execute(
+            "SELECT DISTINCT name FROM shares WHERE id = ?", session["user_id"])
         print(row)
-        return render_template("sell.html",row=row)
+        return render_template("sell.html", row=row)
     elif request.method == "POST":
         name = request.form.get("name")
         number = int(request.form.get("number"))
@@ -273,18 +289,24 @@ def sell():
         name = quote[0]["name"]
         price = quote[0]["price"]
         #symbol = quote["symbol"]
-        value = db.execute("SELECT sum(value) FROM shares WHERE id = ? AND name = ?",session["user_id"], name)
+        value = db.execute(
+            "SELECT sum(value) FROM shares WHERE id = ? AND name = ?", session["user_id"], name)
         if number <= value[0]['sum(value)']:
-            cash = db.execute("SELECT cash FROM users WHERE id = :id", id = session["user_id"])
+            cash = db.execute(
+                "SELECT cash FROM users WHERE id = :id", id=session["user_id"])
             cash = cash[0]["cash"]
-            db.execute("INSERT INTO sell (id, name, price, number, total) VALUES (?,?,?,?,?)", session["user_id"], quote[0]["name"], quote[0]["price"], number, number * price )
-            db.execute("INSERT INTO shares (id, number, name, cash, value) VALUES (?,?,?,?,?)", session["user_id"], number, quote[0]["name"], cash + (number * price), (-1) * number)
-            db.execute("UPDATE users SET cash = ? WHERE id = ?",cash + (number * price), session["user_id"])
+            db.execute("INSERT INTO sell (id, name, price, number, total) VALUES (?,?,?,?,?)",
+                       session["user_id"], quote[0]["name"], quote[0]["price"], number, number * price)
+            db.execute("INSERT INTO shares (id, number, name, cash, value) VALUES (?,?,?,?,?)",
+                       session["user_id"], number, quote[0]["name"], cash + (number * price), (-1) * number)
+            db.execute("UPDATE users SET cash = ? WHERE id = ?",
+                       cash + (number * price), session["user_id"])
             alert = "Sold!"
             session['key'] = alert
             return redirect("/")
         else:
-            return apology("not enough shares",403)
+            return apology("not enough shares", 403)
+
 
 @app.route("/add", methods=["GET", "POST"])
 @login_required
@@ -293,12 +315,15 @@ def add():
         return render_template("add.html")
     else:
         cash = int(request.form.get("cash"))
-        rows = db.execute("SELECT cash FROM users WHERE id = ?",session["user_id"])
+        rows = db.execute(
+            "SELECT cash FROM users WHERE id = ?", session["user_id"])
         cash = cash + rows[0]["cash"]
-        db.execute("UPDATE users SET cash = ? WHERE id = ?", cash, session["user_id"])
+        db.execute("UPDATE users SET cash = ? WHERE id = ?",
+                   cash, session["user_id"])
         alert = "Added!"
         session['key'] = alert
         return redirect("/")
+
 
 @app.route("/change", methods=["GET", "POST"])
 @login_required
@@ -306,30 +331,36 @@ def change():
     if request.method == "GET":
         return render_template("change.html")
     else:
-        rows = db.execute("SELECT * FROM users WHERE id = ?",session["user_id"])
+        rows = db.execute("SELECT * FROM users WHERE id = ?",
+                          session["user_id"])
         if check_password_hash(rows[0]["hash"], request.form.get("password")):
             new = request.form.get("newpassword")
             if check_password_hash(rows[0]["hash"], new):
                 return apology("this is same as the previos password")
 
             else:
-                hash = generate_password_hash(new, method='pbkdf2:sha256', salt_length=8)
-                db.execute("UPDATE users SET hash = ? WHERE id = ?", generate_password_hash(new, method='pbkdf2:sha256', salt_length=8), session["user_id"])
+                hash = generate_password_hash(
+                    new, method='pbkdf2:sha256', salt_length=8)
+                db.execute("UPDATE users SET hash = ? WHERE id = ?", generate_password_hash(
+                    new, method='pbkdf2:sha256', salt_length=8), session["user_id"])
                 alert = "Changed!"
                 session['key'] = alert
                 return redirect("/")
 
-
         else:
-            apology("enter correct password",403)
+            apology("enter correct password", 403)
 
-    return apology("todo",403)
+    return apology("todo", 403)
+
+
 @app.route("/list", methods=["GET", "POST"])
 @login_required
 def list():
     if request.method == "GET":
         product = db.execute("SELECT * FROM product")
-        return render_template("list.html", product = product)
+        return render_template("list.html", product=product)
+
+
 @app.route("/item", methods=["GET", "POST"])
 @login_required
 def item():
@@ -342,11 +373,9 @@ def item():
         else:
             price = request.form.get("price")
             description = request.form.get("description")
-            db.execute("INSERT INTO product (name, price, description) VALUES (?, ?, ?)", name, price, description)
+            db.execute(
+                "INSERT INTO product (name, price, description) VALUES (?, ?, ?)", name, price, description)
             return redirect("/list")
-
-
-
 
 
 def errorhandler(e):
